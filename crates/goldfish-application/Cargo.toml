@@ -37,6 +37,9 @@ chrono.workspace = true
 tracing.workspace = true
 secrecy.workspace = true
 zeroize.workspace = true
+# Non-poisoning mutex for the unlock throttle: its critical sections are tiny and
+# panic-free, so std's poisoning (and the `.expect()` it forces) buys nothing.
+parking_lot.workspace = true
 # EFF "large" Diceware word list (7776 words) for the passphrase generator. We
 # use only its `LIST` constant (the generator draws words via our own CSPRNG port).
 eff-wordlist = "1"

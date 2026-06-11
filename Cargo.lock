@@ -1712,6 +1712,7 @@ dependencies = [
  "eff-wordlist",
  "goldfish-crypto",
  "goldfish-domain",
+ "parking_lot",
  "proptest",
  "secrecy",
  "serde",

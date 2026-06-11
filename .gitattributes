@@ -1,0 +1,19 @@
+# Normalize line endings. Text files are stored as LF in the repository and
+# checked out with the platform's native endings, so contributors on Windows and
+# Unix produce identical diffs (and `cargo fmt --check` stays deterministic in CI).
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF or some shells mis-parse them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Treat binary assets as binary so Git never tries to normalize them.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.icns binary
+*.woff  binary
+*.woff2 binary
+*.goldfish binary

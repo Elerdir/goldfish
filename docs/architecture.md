@@ -80,7 +80,7 @@ A clippy lint or CI rule prohibits, e.g., `domain → rusqlite`.
 
 ### `goldfish-tauri`
 - Tauri commands; each `#[tauri::command]` delegates to exactly one use case
-- App state holding the unlocked DEK is in a `parking_lot::Mutex<Option<UnlockedVault>>`
+- App state holding the unlocked DEK is in a `tokio::sync::Mutex<Option<VaultSession>>`
 - Window setup, tracing init, plugin registration
 
 ## State management & locking

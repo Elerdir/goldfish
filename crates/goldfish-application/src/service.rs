@@ -57,7 +57,7 @@ pub struct VaultService {
     keystore: Arc<dyn OsKeyStore>,
     /// Process-wide backoff against online master-password guessing. Shared
     /// across clones so the throttle is global, not per-handle.
-    throttle: Arc<std::sync::Mutex<UnlockThrottle>>,
+    throttle: Arc<parking_lot::Mutex<UnlockThrottle>>,
     /// KDF cost floor. A vault unlocked with weaker parameters is transparently
     /// re-wrapped up to this. Defaults to [`KdfParams::DEFAULT`].
     kdf_floor: KdfParams,
@@ -79,7 +79,7 @@ impl VaultService {
             meta,
             clock,
             keystore,
-            throttle: Arc::new(std::sync::Mutex::new(UnlockThrottle::new())),
+            throttle: Arc::new(parking_lot::Mutex::new(UnlockThrottle::new())),
             kdf_floor: KdfParams::DEFAULT,
         }
     }
@@ -151,7 +151,7 @@ impl VaultService {
         // restart can't clear it; keep whichever window blocks longer.
         let now = self.clock.now();
         {
-            let mut throttle = self.throttle.lock().expect("throttle mutex");
+            let mut throttle = self.throttle.lock();
             let persisted = UnlockThrottle::restore(
                 meta.unlock_failures,
                 meta.unlock_locked_until_ms
@@ -164,11 +164,7 @@ impl VaultService {
 
         // Online brute-force guard: reject (before spending Argon2id) while a
         // backoff window from prior failures is still open.
-        let wait = self
-            .throttle
-            .lock()
-            .expect("throttle mutex")
-            .retry_after(now);
+        let wait = self.throttle.lock().retry_after(now);
         if wait > 0 {
             return Err(ApplicationError::UnlockThrottled {
                 retry_after_secs: wait,
@@ -188,7 +184,7 @@ impl VaultService {
             meta.schema_version,
         ) else {
             let (failures, until) = {
-                let mut throttle = self.throttle.lock().expect("throttle mutex");
+                let mut throttle = self.throttle.lock();
                 throttle.record_failure(self.clock.now());
                 throttle.snapshot()
             };
@@ -198,10 +194,7 @@ impl VaultService {
             let _ = self.meta.save(&meta).await;
             return Err(ApplicationError::InvalidMasterPassword);
         };
-        self.throttle
-            .lock()
-            .expect("throttle mutex")
-            .record_success();
+        self.throttle.lock().record_success();
 
         // Clear any persisted backoff on success.
         if meta.unlock_failures != 0 || meta.unlock_locked_until_ms.is_some() {
@@ -443,10 +436,7 @@ impl VaultService {
         updated.unlock_locked_until_ms = None;
         self.meta.save(&updated).await?;
 
-        self.throttle
-            .lock()
-            .expect("throttle mutex")
-            .record_success();
+        self.throttle.lock().record_success();
 
         let db_key = keyset.derive_db_key();
         self.store.open(&db_key).await?;
