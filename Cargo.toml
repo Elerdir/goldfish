@@ -13,7 +13,7 @@ version = "1.0.0"
 edition = "2021"
 rust-version = "1.80"
 license = "MIT OR Apache-2.0"
-authors = ["niderle <niderle@oksystem.cz>"]
+authors = ["niderle <niderle.l@seznam.cz>"]
 repository = "https://github.com/Elerdir/goldfish"
 homepage = "https://github.com/Elerdir/goldfish"
 
