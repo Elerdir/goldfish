@@ -39,7 +39,7 @@
         "active": true,
         "targets": ["msi", "nsis", "deb", "appimage", "dmg"],
         "publisher": "niderle",
-        "homepage": "https://github.com/niderle/goldfish",
+        "homepage": "https://github.com/Elerdir/goldfish",
         "copyright": "Copyright © 2026 niderle. Licensed under MIT OR Apache-2.0.",
         "icon": [
             "icons/32x32.png",
