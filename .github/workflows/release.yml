@@ -20,6 +20,11 @@ jobs:
   build:
     name: Build ${{ matrix.platform.os }}
     runs-on: ${{ matrix.platform.os }}
+    # macOS signing is gated on this flag: passing an EMPTY APPLE_CERTIFICATE
+    # makes the bundler attempt (and fail) `security import`, so the Apple env is
+    # only ever set when a certificate secret is actually configured.
+    env:
+      MAC_SIGN: ${{ secrets.APPLE_CERTIFICATE != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -96,19 +101,37 @@ jobs:
           $conf | ConvertTo-Json -Depth 100 | Set-Content $confPath -Encoding utf8
           Write-Host "Signing enabled (thumbprint $($cert.Thumbprint))."
 
+      # Unsigned build path: Linux/Windows always, plus macOS when no Apple cert
+      # is configured. The Apple env is intentionally ABSENT here — an empty
+      # APPLE_CERTIFICATE would make the macOS bundler fail at `security import`.
+      # (Windows Authenticode is wired by the "Configure Windows code signing"
+      # step above; without that secret the Windows build is simply unsigned.)
       - name: Build and bundle installers
+        if: ${{ !(matrix.platform.os == 'macos-latest' && env.MAC_SIGN == 'true') }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # --- macOS signing + notarization (optional: set these repo secrets) ---
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Goldfish ${{ github.ref_name }}"
+          releaseBody: "Download the installer for your platform from the assets below. Verify checksums before installing."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.platform.args }}
+
+      # Signed + notarized macOS build — runs only when the Apple secrets exist.
+      - name: Build and bundle installers (macOS, signed)
+        if: ${{ matrix.platform.os == 'macos-latest' && env.MAC_SIGN == 'true' }}
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing + notarization (set these repo secrets to enable).
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # --- Windows Authenticode is wired by the "Configure Windows code
-          #     signing" step above (thumbprint injected when the secret is set). ---
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Goldfish ${{ github.ref_name }}"
