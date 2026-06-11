@@ -1,0 +1,118 @@
+name: Release
+
+# Build signed (when secrets are present) installers for every platform and
+# attach them to a draft GitHub Release. Triggered by pushing a version tag
+# (e.g. `git tag v0.1.0 && git push --tags`) or manually.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# Needed so tauri-action can create the release and upload assets.
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform.os }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-latest
+            rust_targets: ""
+            args: ""
+          - os: windows-latest
+            rust_targets: ""
+            args: ""
+          - os: macos-latest
+            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            args: "--target universal-apple-darwin"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf nasm
+
+      - name: Install NASM (Windows)
+        if: matrix.platform.os == 'windows-latest'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Install Perl (Windows)
+        if: matrix.platform.os == 'windows-latest'
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.38"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.rust_targets }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: corepack enable
+
+      - name: Install frontend dependencies
+        working-directory: src-frontend
+        run: pnpm install --frozen-lockfile
+
+      # Windows Authenticode (optional): if the WINDOWS_CERTIFICATE secret is set,
+      # import the PFX into the cert store and write its thumbprint into
+      # tauri.conf.json so the bundler signs the MSI/EXE. Without the secret this
+      # is a no-op and the build is unsigned (still installable, with SmartScreen
+      # warnings). The cert is never committed; the runner is ephemeral.
+      - name: Configure Windows code signing (optional)
+        if: matrix.platform.os == 'windows-latest'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE) {
+            Write-Host "No WINDOWS_CERTIFICATE secret — building unsigned."
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "goldfish-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $securePwd = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $securePwd
+          Remove-Item $pfx -Force
+          $confPath = "crates/goldfish-tauri/tauri.conf.json"
+          $conf = Get-Content $confPath -Raw | ConvertFrom-Json
+          $conf.bundle.windows.certificateThumbprint = $cert.Thumbprint
+          $conf | ConvertTo-Json -Depth 100 | Set-Content $confPath -Encoding utf8
+          Write-Host "Signing enabled (thumbprint $($cert.Thumbprint))."
+
+      - name: Build and bundle installers
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # --- macOS signing + notarization (optional: set these repo secrets) ---
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # --- Windows Authenticode is wired by the "Configure Windows code
+          #     signing" step above (thumbprint injected when the secret is set). ---
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Goldfish ${{ github.ref_name }}"
+          releaseBody: "Download the installer for your platform from the assets below. Verify checksums before installing."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.platform.args }}

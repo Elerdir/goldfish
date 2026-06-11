@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 224 71% 4%;
+        --card: 0 0% 100%;
+        --card-foreground: 224 71% 4%;
+        --primary: 28 100% 55%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 220 14% 96%;
+        --secondary-foreground: 224 71% 4%;
+        --muted: 220 14% 96%;
+        --muted-foreground: 220 8% 46%;
+        --accent: 28 100% 95%;
+        --accent-foreground: 28 80% 30%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 220 13% 91%;
+        --input: 220 13% 91%;
+        --ring: 28 100% 55%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 224 71% 4%;
+        --foreground: 210 20% 98%;
+        --card: 224 71% 6%;
+        --card-foreground: 210 20% 98%;
+        --primary: 28 100% 60%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 215 28% 17%;
+        --secondary-foreground: 210 20% 98%;
+        --muted: 215 28% 17%;
+        --muted-foreground: 217 11% 65%;
+        --accent: 28 80% 18%;
+        --accent-foreground: 28 100% 80%;
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 210 20% 98%;
+        --border: 215 28% 17%;
+        --input: 215 28% 17%;
+        --ring: 28 100% 60%;
+    }
+
+    * {
+        @apply border-border;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+
+    /* Disable text selection of credentials by default; explicit opt-in per-cell. */
+    .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+}

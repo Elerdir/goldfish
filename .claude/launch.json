@@ -1,0 +1,11 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "goldfish-frontend",
+            "runtimeExecutable": "pnpm",
+            "runtimeArgs": ["--dir", "src-frontend", "dev"],
+            "port": 5173
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "subwindows",
+    "description": "Permissions for the standalone Settings and add/edit-entry windows. They invoke the same vault/folder/tag/entry commands as the main window, plus file dialogs (import/export), can open the logs window, and can close/focus themselves.",
+    "windows": ["goldfish-settings", "goldfish-entry-*"],
+    "permissions": [
+        "core:default",
+        "core:webview:allow-create-webview-window",
+        "core:window:allow-set-focus",
+        "core:window:allow-set-theme",
+        "core:window:allow-close",
+        "dialog:allow-open",
+        "dialog:allow-save",
+        "clipboard-manager:allow-write-text",
+        "clipboard-manager:allow-read-text",
+        "clipboard-manager:allow-clear",
+        "os:allow-platform",
+        "os:allow-version",
+        "os:allow-locale"
+    ]
+}

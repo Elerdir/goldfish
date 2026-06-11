@@ -1,0 +1,5 @@
+msrv = "1.80"
+avoid-breaking-exported-api = true
+disallowed-methods = [
+    { path = "std::env::var", reason = "use config layer instead — env vars must be loaded explicitly" },
+]

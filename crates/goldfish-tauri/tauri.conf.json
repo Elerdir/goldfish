@@ -1,0 +1,79 @@
+{
+    "$schema": "https://schema.tauri.app/config/2",
+    "productName": "Goldfish",
+    "version": "1.0.0",
+    "identifier": "com.goldfish.desktop",
+    "build": {
+        "frontendDist": "../../src-frontend/dist",
+        "devUrl": "http://localhost:5173",
+        "beforeDevCommand": "pnpm --dir ../src-frontend dev",
+        "beforeBuildCommand": "pnpm --dir ../src-frontend build"
+    },
+    "app": {
+        "windows": [
+            {
+                "label": "main",
+                "title": "Goldfish",
+                "width": 520,
+                "height": 680,
+                "minWidth": 460,
+                "minHeight": 600,
+                "resizable": false,
+                "maximizable": false,
+                "fullscreen": false,
+                "center": true,
+                "decorations": true,
+                "transparent": false,
+                "alwaysOnTop": false,
+                "skipTaskbar": false,
+                "theme": null,
+                "dragDropEnabled": false
+            }
+        ],
+        "security": {
+            "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost",
+            "freezePrototype": true
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": ["msi", "nsis", "deb", "appimage", "dmg"],
+        "publisher": "niderle",
+        "homepage": "https://github.com/niderle/goldfish",
+        "copyright": "Copyright © 2026 niderle. Licensed under MIT OR Apache-2.0.",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.ico",
+            "icons/icon.icns"
+        ],
+        "category": "Utility",
+        "shortDescription": "Local-first password manager",
+        "longDescription": "Goldfish — cross-platform desktop password manager with defence-in-depth crypto (Argon2id + XChaCha20-Poly1305 + SQLCipher), biometric unlock, and zero cloud dependency.",
+        "windows": {
+            "digestAlgorithm": "sha256",
+            "timestampUrl": "http://timestamp.digicert.com",
+            "wix": {
+                "language": ["en-US"]
+            },
+            "nsis": {
+                "installMode": "currentUser",
+                "languages": ["English", "German", "Czech"],
+                "displayLanguageSelector": true
+            }
+        },
+        "macOS": {
+            "minimumSystemVersion": "10.15"
+        },
+        "linux": {
+            "deb": {
+                "depends": [
+                    "libwebkit2gtk-4.1-0",
+                    "libgtk-3-0",
+                    "libayatana-appindicator3-1"
+                ]
+            }
+        }
+    }
+}

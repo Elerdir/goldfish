@@ -1,0 +1,46 @@
+[package]
+name = "goldfish-application"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Goldfish — application layer: use cases and ports (traits)."
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+doc_markdown = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+significant_drop_tightening = "allow"
+
+[dependencies]
+goldfish-domain.workspace = true
+goldfish-crypto.workspace = true
+zxcvbn.workspace = true
+totp-rs.workspace = true
+sha1.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+csv.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+secrecy.workspace = true
+zeroize.workspace = true
+# EFF "large" Diceware word list (7776 words) for the passphrase generator. We
+# use only its `LIST` constant (the generator draws words via our own CSPRNG port).
+eff-wordlist = "1"
+
+[dev-dependencies]
+tokio.workspace = true
+proptest = "1"

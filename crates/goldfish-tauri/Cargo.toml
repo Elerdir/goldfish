@@ -1,0 +1,58 @@
+[package]
+name = "goldfish-tauri"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Goldfish — Tauri 2 desktop shell wiring commands to use cases."
+
+[lib]
+name = "goldfish_tauri_lib"
+path = "src/lib.rs"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "goldfish"
+path = "src/main.rs"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+doc_markdown = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+goldfish-domain.workspace = true
+goldfish-application.workspace = true
+goldfish-infrastructure.workspace = true
+
+tauri.workspace = true
+tauri-plugin-dialog.workspace = true
+tauri-plugin-clipboard-manager.workspace = true
+tauri-plugin-os.workspace = true
+tauri-plugin-single-instance.workspace = true
+tauri-plugin-opener.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+parking_lot.workspace = true
+zeroize.workspace = true
+uuid.workspace = true
+
+# Windows-only window/clipboard hardening: exclude the window from screen capture
+# (SetWindowDisplayAffinity) and write clipboard secrets so Clipboard History /
+# Cloud Clipboard skip them.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+clipboard-win = "5"

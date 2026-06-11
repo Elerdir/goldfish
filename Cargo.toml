@@ -1,0 +1,98 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/goldfish-domain",
+    "crates/goldfish-application",
+    "crates/goldfish-crypto",
+    "crates/goldfish-infrastructure",
+    "crates/goldfish-tauri",
+]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT OR Apache-2.0"
+authors = ["niderle <niderle@oksystem.cz>"]
+repository = "https://github.com/Elerdir/goldfish"
+homepage = "https://github.com/Elerdir/goldfish"
+
+[workspace.dependencies]
+# --- crypto primitives (RustCrypto family, audit-friendly) ---
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+hmac = "0.12"
+sha1 = "0.10"
+sha2 = "0.10"
+subtle = "2.6"
+zeroize = { version = "1.8", features = ["zeroize_derive", "serde"] }
+secrecy = { version = "0.10", features = ["serde"] }
+rand = "0.8"
+rand_core = { version = "0.6", features = ["std"] }
+
+# --- persistence (SQLCipher via bundled vendored OpenSSL) ---
+rusqlite = { version = "0.32", features = [
+    "bundled-sqlcipher-vendored-openssl",
+    "blob",
+    "uuid",
+    "chrono",
+    "serde_json",
+] }
+r2d2 = "0.8"
+r2d2_sqlite = { version = "0.25", features = ["bundled-sqlcipher"] }
+refinery = { version = "0.8", features = ["rusqlite"] }
+
+# --- core utilities ---
+uuid = { version = "1.10", features = ["v7", "v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+tracing-appender = "0.2"
+async-trait = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "macros", "fs"] }
+parking_lot = "0.12"
+once_cell = "1"
+
+# --- tauri ---
+# `tray-icon`: minimize-to-tray support (system tray icon + menu).
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-build = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-os = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-opener = "2"
+
+# --- features ---
+zxcvbn = "3"
+totp-rs = { version = "5", features = ["otpauth"] }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+csv = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# --- workspace-internal ---
+goldfish-domain = { path = "crates/goldfish-domain" }
+goldfish-application = { path = "crates/goldfish-application" }
+goldfish-crypto = { path = "crates/goldfish-crypto" }
+goldfish-infrastructure = { path = "crates/goldfish-infrastructure" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
+debug = false
+
+[profile.dev]
+opt-level = 1
+debug = true
+incremental = true
+
+[profile.dev.package."*"]
+opt-level = 3

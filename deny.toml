@@ -1,0 +1,42 @@
+# cargo-deny configuration — https://embarkstudios.github.io/cargo-deny/
+# CI runs `cargo deny check advisories bans sources` (licenses are reviewed
+# out of band to avoid blocking on the large transitive tree).
+
+[advisories]
+# RustSec advisory database. Known vulnerabilities fail the build by default;
+# yanked crates are treated as errors so the lockfile stays installable.
+yanked = "deny"
+# Accepted advisories — all are "unmaintained"/"unsound" notices (no fix
+# available) pulled transitively through Tauri's Linux GTK3 stack and a few
+# macro/unicode crates. They are not exploitable in Goldfish's usage and are
+# out of our control until Tauri's upstream tree updates. Reviewed 2026-06-02.
+ignore = [
+    "RUSTSEC-2024-0370", # proc-macro-error — unmaintained (transitive)
+    "RUSTSEC-2024-0411", # gdkx11 — gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0412", # gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0413", # gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0414", # gtk — gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0415", # gtk-sys — gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0416", # gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0417", # gdkx11-sys — gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0418", # gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0419", # proc-macro-error — unmaintained (transitive)
+    "RUSTSEC-2024-0420", # gtk3-macros — gtk-rs GTK3 bindings unmaintained
+    "RUSTSEC-2024-0429", # glib — VariantStrIter unsoundness (Linux GTK, unused)
+    "RUSTSEC-2025-0075", # unic-common — unmaintained (transitive)
+    "RUSTSEC-2025-0080", # unic-ucd-ident — unmaintained (transitive)
+    "RUSTSEC-2025-0081", # unic-char-property — unmaintained (transitive)
+    "RUSTSEC-2025-0098", # unic-ucd-version — unmaintained (transitive)
+    "RUSTSEC-2025-0100", # unic-char-range — unmaintained (transitive)
+]
+
+[bans]
+# Surface (but don't hard-fail on) duplicate versions and wildcard deps.
+multiple-versions = "warn"
+wildcards = "warn"
+
+[sources]
+# Only crates.io is trusted; reject unknown registries or git sources.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

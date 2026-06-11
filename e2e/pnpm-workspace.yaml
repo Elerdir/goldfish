@@ -1,0 +1,10 @@
+# Build-script approvals for the e2e harness (pnpm 11+). These packages run
+# install scripts that are genuinely required:
+#   edgedriver / geckodriver — download the matching WebDriver binary
+#   esbuild                   — pulled by WebdriverIO's TS config loader; fetches
+#                               its native binary
+# (npm also works — see README; this file only matters if you use pnpm here.)
+allowBuilds:
+  edgedriver: true
+  geckodriver: true
+  esbuild: true

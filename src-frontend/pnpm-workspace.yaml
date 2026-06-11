@@ -1,0 +1,5 @@
+# pnpm 11+ stores per-project build allowances here (replaces the old `pnpm` field
+# in package.json). esbuild's postinstall downloads the platform-specific native
+# binary required by vite — strictly necessary, hence allowed explicitly.
+allowBuilds:
+  esbuild: true

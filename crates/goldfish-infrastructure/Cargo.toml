@@ -1,0 +1,83 @@
+[package]
+name = "goldfish-infrastructure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Goldfish — concrete adapters (SQLite + SQLCipher, OS keystore, HIBP, importers)."
+
+# `deny` (not `forbid`) so the Windows keystore adapter can use narrowly-scoped,
+# `// SAFETY:`-documented Win32 FFI (COM init + Hello consent interop). All other
+# code stays unsafe-free.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+doc_markdown = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+significant_drop_tightening = "allow"
+
+[dependencies]
+goldfish-domain.workspace = true
+goldfish-application.workspace = true
+goldfish-crypto.workspace = true
+
+# persistence
+rusqlite.workspace = true
+r2d2.workspace = true
+r2d2_sqlite.workspace = true
+refinery.workspace = true
+keyring.workspace = true
+
+# core
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+parking_lot.workspace = true
+zeroize.workspace = true
+secrecy.workspace = true
+
+# HIBP breach-check client
+reqwest.workspace = true
+
+# Windows Hello consent (biometric gate) for the keystore adapter.
+#   Security_Credentials_UI    — UserConsentVerifier (availability + verification)
+#   Foundation                 — IAsyncOperation<…>
+#   Win32_System_Com           — CoInitializeEx (activate WinRT on tokio threads)
+#   Win32_System_WinRT         — IUserConsentVerifierInterop (window-parented prompt)
+#   Win32_UI_WindowsAndMessaging / Win32_Foundation — GetForegroundWindow / HWND
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Security_Credentials_UI",
+    "Foundation",
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_WinRT",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+# macOS Touch ID consent (biometric gate) via the LocalAuthentication framework.
+#   objc2 / objc2-foundation        — Obj-C runtime + NSString/NSError
+#   objc2-local-authentication      — LAContext / LAPolicy
+#   block2                          — the async evaluatePolicy reply block
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSString", "NSError"] }
+objc2-local-authentication = { version = "0.3", features = ["LAContext", "block2"] }
+block2 = "0.6"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true }
