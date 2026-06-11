@@ -1,10 +1,11 @@
 name: CI
 
 on:
-  # Run the full gate on every branch push…
+  # Fast checks (fmt + clippy + test on Linux, frontend, supply chain) run on
+  # every branch push; the heavy Windows/macOS build is reserved for main and
+  # pull requests (decided by the `setup` job below).
   push:
     branches: ["**"]
-  # …and on pull requests targeting main (covers contributions from forks).
   pull_request:
     branches: [main]
 
@@ -13,13 +14,32 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  # Choose the OS matrix. The full three-OS build is expensive (it compiles
+  # vendored OpenSSL + SQLCipher), so run it only on main and pull requests;
+  # other branch pushes build and test on Linux alone for fast, cheap feedback.
+  setup:
+    name: Decide build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.pick.outputs.os }}
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo 'os=["ubuntu-latest", "windows-latest", "macos-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
   rust:
     name: Rust ${{ matrix.os }}
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: ${{ fromJSON(needs.setup.outputs.os) }}
     steps:
       - uses: actions/checkout@v4
 
