@@ -282,11 +282,11 @@ mod platform {
     // Biometric gating is not yet implemented on this platform (e.g. Linux);
     // storage still works via the keyring, but we don't advertise biometric
     // support.
-    pub fn biometrics_available() -> bool {
+    pub const fn biometrics_available() -> bool {
         false
     }
 
-    pub fn require_consent(_message: &str) -> Result<(), ApplicationError> {
+    pub const fn require_consent(_message: &str) -> Result<(), ApplicationError> {
         Err(ApplicationError::BiometricUnavailable)
     }
 }
