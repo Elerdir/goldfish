@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Run the full gate on every branch push…
   push:
-    branches: [main]
+    branches: ["**"]
+  # …and on pull requests targeting main (covers contributions from forks).
   pull_request:
     branches: [main]
 
