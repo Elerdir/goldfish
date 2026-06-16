@@ -180,7 +180,9 @@
     },
     "attachment": {
         "section": "Přílohy",
-        "add": "Přiložit soubor",
+        "add": "Přiložit soubory",
+        "drop_hint": "Přetáhni sem soubory, nebo",
+        "too_large": "Soubor je příliš velký (max 10 MB).",
         "save": "Uložit na disk",
         "delete": "Odebrat",
         "empty": "Žádné přílohy."

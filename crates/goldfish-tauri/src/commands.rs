@@ -1084,6 +1084,45 @@ pub async fn add_attachment(
     })
 }
 
+/// Attaches a file whose bytes come from the webview — used for drag-and-drop on
+/// the detail view, where the OS file path is unavailable. The bytes are sealed
+/// and zeroized in Rust exactly like the path-based [`add_attachment`]; only the
+/// encrypted blob is stored. The oversize cap is enforced by the service.
+/// Requires an unlocked vault.
+#[tauri::command]
+pub async fn add_attachment_bytes(
+    state: State<'_, AppState>,
+    entry_id: String,
+    name: String,
+    mut data: Vec<u8>,
+) -> CmdResult<AttachmentDto> {
+    let entry = parse_id(&entry_id)?;
+    // Keep only the file name component — never a caller-supplied path.
+    let name = std::path::Path::new(&name).file_name().map_or_else(
+        || "attachment".to_owned(),
+        |n| n.to_string_lossy().into_owned(),
+    );
+
+    let result = {
+        let guard = state.session.lock().await;
+        let session = guard
+            .as_ref()
+            .ok_or_else(|| CommandError::from(ApplicationError::VaultLocked))?;
+        state
+            .service
+            .add_attachment(session, entry, &name, &data)
+            .await
+    };
+    data.zeroize();
+    let meta = result?;
+    tracing::info!(size = meta.size, "attachment added (bytes)");
+    Ok(AttachmentDto {
+        id: meta.id.to_string(),
+        name: meta.name,
+        size: meta.size,
+    })
+}
+
 /// Lists an entry's attachment metadata (no file bytes).
 #[tauri::command]
 pub async fn list_attachments(
