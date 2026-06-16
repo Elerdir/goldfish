@@ -181,7 +181,9 @@
     },
     "attachment": {
         "section": "Anhänge",
-        "add": "Datei anhängen",
+        "add": "Dateien anhängen",
+        "drop_hint": "Dateien hierher ziehen, oder",
+        "too_large": "Datei ist zu groß (max. 10 MB).",
         "save": "Auf Datenträger speichern",
         "delete": "Entfernen",
         "empty": "Keine Anhänge."

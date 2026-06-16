@@ -181,7 +181,9 @@
     },
     "attachment": {
         "section": "Attachments",
-        "add": "Attach file",
+        "add": "Attach files",
+        "drop_hint": "Drag files here, or",
+        "too_large": "File is too large (max 10 MB).",
         "save": "Save to disk",
         "delete": "Remove",
         "empty": "No attachments."

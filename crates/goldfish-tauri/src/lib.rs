@@ -113,6 +113,7 @@ pub fn run() {
             commands::rename_tag,
             commands::delete_tag,
             commands::add_attachment,
+            commands::add_attachment_bytes,
             commands::list_attachments,
             commands::save_attachment,
             commands::delete_attachment,

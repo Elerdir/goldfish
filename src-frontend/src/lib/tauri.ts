@@ -392,6 +392,27 @@ export async function addAttachment(entryId: string, path: string): Promise<Atta
     return invoke<AttachmentMeta>("add_attachment", { entryId, path });
 }
 
+/** Maximum attachment size in bytes (mirrors the Rust `MAX_ATTACHMENT_SIZE`). */
+export const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+
+/**
+ * Attaches a file from its raw bytes — used for drag-and-drop, where no OS path
+ * is available. The bytes are sealed and zeroized in Rust (only ciphertext is
+ * stored); prefer {@link addAttachment} for file-picker selections, which keeps
+ * the bytes out of the webview entirely.
+ */
+export async function addAttachmentBytes(
+    entryId: string,
+    name: string,
+    bytes: Uint8Array,
+): Promise<AttachmentMeta> {
+    return invoke<AttachmentMeta>("add_attachment_bytes", {
+        entryId,
+        name,
+        data: Array.from(bytes),
+    });
+}
+
 /** Lists an entry's attachment metadata (no file bytes). */
 export async function listAttachments(entryId: string): Promise<AttachmentMeta[]> {
     return invoke<AttachmentMeta[]>("list_attachments", { entryId });

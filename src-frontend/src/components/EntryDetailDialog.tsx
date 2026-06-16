@@ -23,6 +23,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { useSettings } from "@/providers/SettingsProvider";
 import {
     addAttachment,
+    addAttachmentBytes,
     asCommandError,
     checkPwned,
     copySecret,
@@ -31,6 +32,7 @@ import {
     getEntry,
     listAttachments,
     listTags,
+    MAX_ATTACHMENT_SIZE,
     openExternal,
     passwordHistory,
     saveAttachment,
@@ -225,14 +227,17 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * Encrypted attachments for an entry. Files are read, sealed, and written
- * entirely in Rust via the dialog plugin — bytes never enter the webview.
+ * Encrypted attachments for an entry. Picker selections and downloads are
+ * path-based, so those bytes stay in Rust; drag-and-dropped files arrive as
+ * bytes in the webview (no OS path is exposed there) and are sealed + zeroized
+ * in Rust. Supports selecting multiple files at once and dropping them in.
  */
 function AttachmentsSection({ entryId, open }: { entryId: string; open: boolean }) {
     const { t } = useTranslation();
     const qc = useQueryClient();
     const [busy, setBusy] = useState(false);
     const [errorKey, setErrorKey] = useState<string | null>(null);
+    const [dragOver, setDragOver] = useState(false);
 
     const query = useQuery({
         queryKey: ["attachments", entryId],
@@ -242,19 +247,68 @@ function AttachmentsSection({ entryId, open }: { entryId: string; open: boolean 
 
     const refresh = () => qc.invalidateQueries({ queryKey: ["attachments", entryId] });
 
-    const add = async () => {
-        setErrorKey(null);
-        const path = await openFileDialog({ multiple: false });
-        if (typeof path !== "string") return;
+    // While this section is mounted, stop the webview from navigating to / opening
+    // a file dropped anywhere outside the drop zone below.
+    useEffect(() => {
+        const swallow = (e: DragEvent) => {
+            if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+        };
+        window.addEventListener("dragover", swallow);
+        window.addEventListener("drop", swallow);
+        return () => {
+            window.removeEventListener("dragover", swallow);
+            window.removeEventListener("drop", swallow);
+        };
+    }, []);
+
+    // Picker selections are path-based, so the plaintext bytes stay in Rust.
+    const addPaths = async (paths: string[]) => {
         setBusy(true);
         try {
-            await addAttachment(entryId, path);
+            for (const path of paths) {
+                await addAttachment(entryId, path);
+            }
             await refresh();
         } catch (e) {
             setErrorKey(`errors.${asCommandError(e).kind}`);
         } finally {
             setBusy(false);
         }
+    };
+
+    // Dropped files arrive as bytes (the OS path is not exposed to the webview).
+    const addFiles = async (files: File[]) => {
+        setBusy(true);
+        try {
+            for (const file of files) {
+                if (file.size > MAX_ATTACHMENT_SIZE) {
+                    setErrorKey("attachment.too_large");
+                    continue;
+                }
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                await addAttachmentBytes(entryId, file.name, bytes);
+            }
+            await refresh();
+        } catch (e) {
+            setErrorKey(`errors.${asCommandError(e).kind}`);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const pick = async () => {
+        setErrorKey(null);
+        const picked = await openFileDialog({ multiple: true });
+        if (picked === null) return;
+        await addPaths(Array.isArray(picked) ? picked : [picked]);
+    };
+
+    const onDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(false);
+        setErrorKey(null);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) void addFiles(files);
     };
 
     const saveOne = async (att: AttachmentMeta) => {
@@ -280,7 +334,21 @@ function AttachmentsSection({ entryId, open }: { entryId: string; open: boolean 
     const items = query.data ?? [];
 
     return (
-        <div className="flex flex-col gap-1.5">
+        <div
+            onDragOver={(e) => {
+                if (!e.dataTransfer.types.includes("Files")) return;
+                e.preventDefault();
+                setDragOver(true);
+            }}
+            onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                setDragOver(false);
+            }}
+            onDrop={onDrop}
+            className={`flex flex-col gap-1.5 rounded-md p-1 transition-colors ${
+                dragOver ? "ring-2 ring-primary" : ""
+            }`}
+        >
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t("attachment.section")}
             </span>
@@ -310,15 +378,13 @@ function AttachmentsSection({ entryId, open }: { entryId: string; open: boolean 
             {query.isSuccess && items.length === 0 && (
                 <p className="text-xs text-muted-foreground">{t("attachment.empty")}</p>
             )}
-            <Button
-                variant="outline"
-                className="self-start"
-                disabled={busy}
-                onClick={() => void add()}
-            >
-                <Plus size={16} />
-                {t("attachment.add")}
-            </Button>
+            <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{t("attachment.drop_hint")}</span>
+                <Button variant="outline" disabled={busy} onClick={() => void pick()}>
+                    <Plus size={16} />
+                    {t("attachment.add")}
+                </Button>
+            </div>
             {errorKey && <p className="text-xs text-destructive">{t(errorKey)}</p>}
         </div>
     );
