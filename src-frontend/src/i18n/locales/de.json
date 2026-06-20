@@ -183,6 +183,7 @@
         "section": "Anhänge",
         "add": "Dateien anhängen",
         "drop_hint": "Dateien hierher ziehen, oder",
+        "attach_on_save": "Dateien werden nach dem Speichern angehängt.",
         "too_large": "Datei ist zu groß (max. 10 MB).",
         "save": "Auf Datenträger speichern",
         "delete": "Entfernen",
