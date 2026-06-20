@@ -237,6 +237,10 @@ export async function openEntryWindow(entryId?: string | null): Promise<void> {
         minHeight: 480,
         resizable: true,
         center: true,
+        // Accept OS file drops so the entry form can queue attachment files.
+        // This window has no in-app HTML5 drag-and-drop to clash with (unlike the
+        // main window, which keeps it disabled for entry reordering).
+        dragDropEnabled: true,
     });
     void win.once("tauri://error", () => {});
 }

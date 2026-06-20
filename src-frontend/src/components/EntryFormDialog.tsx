@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Wand2 } from "lucide-react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import { Paperclip, Plus, Trash2, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { PasswordGenerator } from "@/components/PasswordGenerator";
@@ -12,11 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+    addAttachment,
     addEntry,
     asCommandError,
     createFolder,
     createTag,
     getEntry,
+    isTauri,
     listFolders,
     listTags,
     updateEntry,
@@ -106,6 +110,10 @@ export function EntryFormDialog({
     const [genOpen, setGenOpen] = useState(false);
     const [addingFolder, setAddingFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
+    // Files queued in the form; attached to the entry right after it is saved
+    // (a new entry has no id to attach to until then).
+    const [pendingPaths, setPendingPaths] = useState<string[]>([]);
+    const [dragOver, setDragOver] = useState(false);
 
     const editing = entryId !== null;
 
@@ -124,6 +132,41 @@ export function EntryFormDialog({
             qc.removeQueries({ queryKey: ["entry", entryId] });
         }
     }, [open, entryId, qc]);
+
+    // Clear queued attachments whenever a different entry/form opens.
+    useEffect(() => {
+        setPendingPaths([]);
+    }, [open, entryId]);
+
+    // OS file drag-and-drop onto the entry window queues files (by path, so the
+    // bytes are read and sealed in Rust, never in the webview).
+    useEffect(() => {
+        if (!isTauri()) return;
+        let unlisten: (() => void) | undefined;
+        let cancelled = false;
+        void getCurrentWebview()
+            .onDragDropEvent((event) => {
+                const p = event.payload;
+                if (p.type === "drop") {
+                    setDragOver(false);
+                    if (p.paths.length > 0) {
+                        setPendingPaths((prev) => [...prev, ...p.paths]);
+                    }
+                } else if (p.type === "leave") {
+                    setDragOver(false);
+                } else {
+                    setDragOver(true);
+                }
+            })
+            .then((un) => {
+                if (cancelled) un();
+                else unlisten = un;
+            });
+        return () => {
+            cancelled = true;
+            unlisten?.();
+        };
+    }, []);
 
     useEffect(() => {
         if (!open) return;
@@ -179,8 +222,15 @@ export function EntryFormDialog({
     };
 
     const mutation = useMutation({
-        mutationFn: (input: EntryInput) =>
-            entryId !== null ? updateEntry(entryId, input) : addEntry(input),
+        mutationFn: async (input: EntryInput) => {
+            const saved =
+                entryId !== null ? await updateEntry(entryId, input) : await addEntry(input);
+            // The entry now has an id, so attach any files queued in the form.
+            for (const path of pendingPaths) {
+                await addAttachment(saved.id, path);
+            }
+            return saved;
+        },
         onSuccess: () => {
             void qc.invalidateQueries({ queryKey: ["entries"] });
             if (editing) void qc.invalidateQueries({ queryKey: ["entry", entryId] });
@@ -240,6 +290,18 @@ export function EntryFormDialog({
             ...f,
             customFields: f.customFields.filter((_, j) => j !== index),
         }));
+
+    const baseName = (p: string) => p.split(/[\\/]/).pop() || p;
+
+    const pickFiles = async () => {
+        setErrorKey(null);
+        const picked = await openFileDialog({ multiple: true });
+        if (picked === null) return;
+        setPendingPaths((prev) => [...prev, ...(Array.isArray(picked) ? picked : [picked])]);
+    };
+
+    const removePending = (i: number) =>
+        setPendingPaths((prev) => prev.filter((_, j) => j !== i));
 
     const createNewFolder = async () => {
         const name = newFolderName.trim();
@@ -507,6 +569,54 @@ export function EntryFormDialog({
                         spellCheck={false}
                         className="font-mono"
                     />
+                </Field>
+                <Field label={t("attachment.section")}>
+                    <div
+                        className={cn(
+                            "flex flex-col gap-2 rounded-md p-1 transition-colors",
+                            dragOver && "ring-2 ring-primary",
+                        )}
+                    >
+                        {pendingPaths.length > 0 && (
+                            <ul className="flex flex-col gap-1">
+                                {pendingPaths.map((p, i) => (
+                                    <li
+                                        key={`${p}-${i}`}
+                                        className="flex items-center gap-2 rounded border border-border px-2 py-1"
+                                    >
+                                        <Paperclip
+                                            size={14}
+                                            className="shrink-0 text-muted-foreground"
+                                        />
+                                        <span className="min-w-0 flex-1 truncate text-sm">
+                                            {baseName(p)}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removePending(i)}
+                                            aria-label={t("attachment.delete")}
+                                            title={t("attachment.delete")}
+                                            className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                                {t("attachment.drop_hint")}
+                            </span>
+                            <Button variant="outline" onClick={() => void pickFiles()}>
+                                <Plus size={16} />
+                                {t("attachment.add")}
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {t("attachment.attach_on_save")}
+                        </p>
+                    </div>
                 </Field>
                 <label className="flex items-center gap-2 text-sm">
                     <input

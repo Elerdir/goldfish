@@ -183,6 +183,7 @@
         "section": "Attachments",
         "add": "Attach files",
         "drop_hint": "Drag files here, or",
+        "attach_on_save": "Files attach once the entry is saved.",
         "too_large": "File is too large (max 10 MB).",
         "save": "Save to disk",
         "delete": "Remove",
