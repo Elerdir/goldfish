@@ -37,6 +37,7 @@
     },
     "bundle": {
         "active": true,
+        "createUpdaterArtifacts": true,
         "targets": ["msi", "nsis", "deb", "appimage", "dmg"],
         "publisher": "niderle",
         "homepage": "https://github.com/Elerdir/goldfish",
@@ -74,6 +75,12 @@
                     "libayatana-appindicator3-1"
                 ]
             }
+        }
+    },
+    "plugins": {
+        "updater": {
+            "endpoints": ["https://updatehub.niderle.cz/api/apps/goldfish/tauri/latest.json"],
+            "pubkey": "__GOLDFISH_UPDATER_PUBKEY__"
         }
     }
 }

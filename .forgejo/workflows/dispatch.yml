@@ -1,0 +1,113 @@
+name: Dispatch release
+
+# Started by Dispatch (https://dispatch.niderle.cz) through the Forgejo API (workflow_dispatch).
+# Contract shared by all apps in Dispatch:
+#   - inputs version, platforms, dispatch_id
+#   - dispatch_id in run-name (Dispatch finds this run by it)
+#
+# main is protected (PR + required checks), so the version bump can NOT be pushed to main.
+# Instead the bump lives in a commit reachable only from the tag (detached from the branch):
+# tag v<version> = main + version bump, main itself does not move. The files in main catch
+# up whenever someone merges the version in a PR. release-bot (RELEASE_TOKEN) pushes the tag;
+# release.yml skips release-bot tags, so the build does not run twice. The Windows installers
+# are built in the same run. macOS/Linux return with their runners (stage F5).
+#
+# Can also be started manually (Actions -> Dispatch release -> Run).
+
+run-name: Release ${{ inputs.version }} [${{ inputs.dispatch_id || 'manual' }}]
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version without v (e.g. 1.1.0)"
+        type: string
+        required: true
+      platforms:
+        description: "Comma separated: windows,macos,linux"
+        type: string
+        default: "windows"
+      dispatch_id:
+        description: "Correlation ID from Dispatch (leave empty when manual)"
+        type: string
+        default: ""
+
+concurrency:
+  group: dispatch-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Bump version and tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Validate inputs
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          PLATFORMS: ${{ inputs.platforms }}
+        run: |
+          # No pre-release: the Windows build contains an MSI, which cannot do X.Y.Z-rc.
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not a version X.Y.Z"; exit 1
+          fi
+          if ! [[ "$PLATFORMS" =~ ^(windows|macos|linux)(,(windows|macos|linux))*$ ]]; then
+            echo "::error::Invalid platforms '$PLATFORMS'"; exit 1
+          fi
+          if ! [[ ",$PLATFORMS," == *",windows,"* ]]; then
+            echo "::error::macOS and Linux have no runner yet - release with platform windows"; exit 1
+          fi
+          [[ "$PLATFORMS" != "windows" ]] && echo "::warning::macOS and Linux have no runner yet - building Windows only."
+          true
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Tag must not exist yet
+        shell: bash
+        env:
+          TAG: v${{ inputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists - pick a higher version"; exit 1
+          fi
+
+      - name: Bump version in a tag-only commit
+        id: tag
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          TAG: v${{ inputs.version }}
+        run: |
+          git config user.name  "release-bot"
+          git config user.email "release-bot@git.niderle.cz"
+          git switch --detach
+          node scripts/bump-version.mjs "$VERSION"
+          bash scripts/verify-version.sh "$TAG"
+          git add Cargo.toml Cargo.lock crates/goldfish-tauri/tauri.conf.json src-frontend/package.json
+          git commit -m "chore(release): $TAG"
+          git tag -a "$TAG" -m "Goldfish $TAG"
+          git push origin "refs/tags/$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows installers
+    needs: tag
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+
+      - uses: ./.forgejo/actions/windows-installer
+        with:
+          version: ${{ inputs.version }}
+          signing-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          signing-key-password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          updatehub-url: ${{ secrets.UPDATEHUB_URL }}
+          updatehub-token: ${{ secrets.UPDATEHUB_CI_TOKEN }}

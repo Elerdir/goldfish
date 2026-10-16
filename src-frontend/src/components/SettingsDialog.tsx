@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { BackupSection } from "@/components/BackupSection";
 import { RecoverySection } from "@/components/RecoverySection";
+import { UpdatesSection } from "@/components/UpdatesSection";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -279,11 +280,7 @@ export function SettingsDialog({
                     </Button>
                 </section>
 
-                {version && (
-                    <p className="border-t border-border pt-3 text-center text-xs text-muted-foreground">
-                        Goldfish v{version}
-                    </p>
-                )}
+                <UpdatesSection version={version} />
             </div>
         </Dialog>
     );

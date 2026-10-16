@@ -1,0 +1,125 @@
+name: Goldfish - Windows installers
+description: >
+  Tauri build for Windows (MSI + NSIS) with the updater signature, uploaded to UpdateHub as a
+  DRAFT. Expects a checkout of tag vX.Y.Z; runs on the Windows runner (VM on the NUC, host
+  executor). `cargo tauri build` instead of tauri-action (that one creates a GitHub release).
+  Vendored OpenSSL (SQLCipher) needs Strawberry Perl and NASM preinstalled in the VM
+  (nuc-server/windows-runner).
+
+inputs:
+  version:
+    description: Version X.Y.Z (without v); MSI does not support pre-releases
+    required: true
+  signing-key:
+    description: TAURI_SIGNING_PRIVATE_KEY (updater minisign key, ~/.tauri/goldfish.key)
+    required: true
+  signing-key-password:
+    description: TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+    required: false
+    default: ""
+  updatehub-url:
+    description: https://updatehub.niderle.cz (empty = no upload)
+    required: false
+    default: ""
+  updatehub-token:
+    description: Per-app CI token of the goldfish app in UpdateHub
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # A placeholder would produce a build whose updates users can never verify.
+    - name: Verify updater pubkey
+      shell: pwsh
+      run: |
+        $conf = Get-Content crates/goldfish-tauri/tauri.conf.json -Raw
+        if ($conf -notmatch '"pubkey":\s*"[A-Za-z0-9+/=]{40,}"') {
+          Write-Error "Updater pubkey in crates/goldfish-tauri/tauri.conf.json is missing or a placeholder."
+          exit 1
+        }
+
+    - name: Build prerequisites on runner
+      shell: pwsh
+      run: |
+        $missing = @()
+        $perl = Get-Command perl -ErrorAction SilentlyContinue
+        if (-not $perl -or $perl.Source -notmatch 'Strawberry') { $missing += "Strawberry Perl (perl in PATH: $($perl.Source))" }
+        if (-not (Get-Command nasm -ErrorAction SilentlyContinue)) { $missing += "NASM" }
+        if ($missing) { Write-Error "Missing on runner: $($missing -join ', '). See nuc-server/windows-runner/README.md."; exit 1 }
+        # Short target dir outside the workspace: it persists in the VM (incremental builds,
+        # no rust-cache needed) and keeps MSVC paths well under 260 characters.
+        "CARGO_TARGET_DIR=C:\t\goldfish" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+    - name: Install Rust (stable)
+      uses: dtolnay/rust-toolchain@stable
+
+    # Node is installed machine-wide in the VM.
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Install frontend deps
+      shell: pwsh
+      run: pnpm --dir src-frontend install --frozen-lockfile
+
+    # Tauri CLI (cargo tauri); after the first run it stays in ~/.cargo/bin of the runner account.
+    - name: Tauri CLI
+      shell: pwsh
+      run: |
+        if (-not (Get-Command cargo-tauri -ErrorAction SilentlyContinue)) {
+          cargo install tauri-cli --version "~2.12" --locked
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+        }
+        cargo tauri --version
+
+    # Installers of previous versions in the persistent target dir would get mixed up on upload.
+    - name: Build + bundle (MSI, NSIS)
+      shell: pwsh
+      env:
+        TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.signing-key }}
+        TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.signing-key-password }}
+      run: |
+        $bundle = Join-Path $env:CARGO_TARGET_DIR "release\bundle"
+        if (Test-Path $bundle) { Remove-Item -Recurse -Force $bundle }
+        # --verbose: without it a WiX (light.exe) failure only says "failed to run".
+        cargo tauri build --bundles msi,nsis --verbose
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+
+    - name: Release notes from CHANGELOG
+      shell: bash
+      run: bash scripts/release-notes.sh "${{ inputs.version }}" > release-notes.md
+
+    # MSI (for people and GPO) first, NSIS (downloaded by the updater) last.
+    # Same version = another artifact of the same draft.
+    - name: Upload to UpdateHub (MSI, then NSIS)
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        UPDATEHUB_URL: ${{ inputs.updatehub-url }}
+        UPDATEHUB_CI_TOKEN: ${{ inputs.updatehub-token }}
+      run: |
+        set -euo pipefail
+        bundle="$(cygpath -u "$CARGO_TARGET_DIR")/release/bundle"
+        msi=$(ls "$bundle"/msi/*_"${VERSION}"_*.msi | head -n1)
+        nsis=$(ls "$bundle"/nsis/*_"${VERSION}"_*-setup.exe | head -n1)
+        # Without the .sig UpdateHub would not put the installer into the updater manifest.
+        [ -f "$nsis.sig" ] || { echo "::error::Missing $(basename "$nsis").sig - check TAURI_SIGNING_PRIVATE_KEY"; exit 1; }
+        if [ -z "$UPDATEHUB_URL" ] || [ -z "$UPDATEHUB_CI_TOKEN" ]; then
+          echo "::warning::UPDATEHUB_URL / UPDATEHUB_CI_TOKEN not set - installers are not uploaded."; exit 0
+        fi
+        send() {
+          local file="$1" sig_args=()
+          [ -f "$file.sig" ] && sig_args=(-F "signature=$(cat "$file.sig")")
+          echo "Uploading $(basename "$file") ($(du -h "$file" | cut -f1))"
+          curl -f -sS --retry 3 --retry-delay 60 --retry-all-errors -X POST "$UPDATEHUB_URL/api/ci/apps/goldfish/releases" \
+            -H "X-UpdateHub-Token: $UPDATEHUB_CI_TOKEN" \
+            -F "file=@$file" "${sig_args[@]}" \
+            -F "version=$VERSION" -F "platform=windows" -F "arch=x64" -F "channel=stable" \
+            -F "release_notes=<release-notes.md"
+          echo
+        }
+        send "$msi"
+        send "$nsis"
+        echo "Uploaded to UpdateHub as a DRAFT - publish it at /apps/goldfish."
