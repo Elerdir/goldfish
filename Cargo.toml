@@ -11,7 +11,7 @@ members = [
 [workspace.package]
 version = "1.0.0"
 edition = "2021"
-rust-version = "1.90"
+rust-version = "1.92"
 license = "MIT OR Apache-2.0"
 authors = ["niderle <niderle.l@seznam.cz>"]
 repository = "https://github.com/Elerdir/goldfish"
@@ -32,7 +32,7 @@ rand = "0.8"
 rand_core = { version = "0.6", features = ["std"] }
 
 # --- persistence (SQLCipher via bundled vendored OpenSSL) ---
-rusqlite = { version = "0.32", features = [
+rusqlite = { version = "0.40", features = [
     "bundled-sqlcipher-vendored-openssl",
     "blob",
     "uuid",
@@ -40,8 +40,8 @@ rusqlite = { version = "0.32", features = [
     "serde_json",
 ] }
 r2d2 = "0.8"
-r2d2_sqlite = { version = "0.25", features = ["bundled-sqlcipher"] }
-refinery = { version = "0.8", features = ["rusqlite"] }
+r2d2_sqlite = { version = "0.35", features = ["bundled-sqlcipher"] }
+refinery = { version = "0.10", features = ["rusqlite"] }
 
 # --- core utilities ---
 uuid = { version = "1.10", features = ["v7", "v4", "serde"] }
