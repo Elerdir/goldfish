@@ -75,7 +75,7 @@ tauri-plugin-process = "2.4"
 # --- features ---
 zxcvbn = "3"
 totp-rs = { version = "5", features = ["otpauth"] }
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+keyring = "4"
 csv = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 

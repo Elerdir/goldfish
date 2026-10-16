@@ -290,3 +290,42 @@ mod platform {
         Err(ApplicationError::BiometricUnavailable)
     }
 }
+
+/// Credentials written by keyring 3 (Goldfish ≤ 1.1.0) must stay readable, otherwise an
+/// update would silently drop every user's biometric unlock. Touches the real Windows
+/// Credential Manager under a throwaway label (no consent prompt: reads bypass the gate).
+#[cfg(all(test, windows))]
+mod compat_tests {
+    use super::{Entry, KeyringStore, SERVICE};
+    use goldfish_application::OsKeyStore;
+
+    fn throwaway_label() -> String {
+        format!("goldfish-compat-test-{}", uuid::Uuid::new_v4())
+    }
+
+    #[test]
+    fn reads_credential_stored_by_keyring_3() {
+        let label = throwaway_label();
+        let secret = [0_u8, 1, 2, 0xfe, 0xff, 42];
+        let old = keyring3::Entry::new(SERVICE, &label).unwrap();
+        old.set_secret(&secret).unwrap();
+
+        let read = Entry::new(SERVICE, &label).unwrap().get_secret();
+        old.delete_credential().unwrap();
+        assert_eq!(read.unwrap(), secret);
+    }
+
+    #[tokio::test]
+    async fn keyring_3_reads_and_store_deletes_what_store_writes() {
+        let label = throwaway_label();
+        let store = KeyringStore::new();
+        store.store(&label, b"protection-key").await.unwrap();
+
+        // A downgrade to 1.1.0 still finds the key.
+        let old = keyring3::Entry::new(SERVICE, &label).unwrap();
+        assert_eq!(old.get_secret().unwrap(), b"protection-key");
+
+        store.delete(&label).await.unwrap();
+        assert!(matches!(old.get_secret(), Err(keyring3::Error::NoEntry)));
+    }
+}
