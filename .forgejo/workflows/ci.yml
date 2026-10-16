@@ -58,7 +58,9 @@ jobs:
       # cargo-deny's advisory database is the same RustSec DB as cargo-audit;
       # one tool, precisely configured via deny.toml (accepted advisories pinned
       # there). Licenses are reviewed out of band to avoid blocking on the large
-      # transitive tree. Prebuilt binary instead of the Docker-based action.
+      # transitive tree. Prebuilt binary instead of the Docker-based action; it
+      # still needs cargo (cargo metadata), which the runner image lacks.
+      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny
