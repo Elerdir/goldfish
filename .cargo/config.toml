@@ -1,0 +1,7 @@
+[env]
+# SQLCipher (bundled in libsqlite3-sys) without page locking (mlock/VirtualLock).
+# Since SQLCipher 4.14 `PRAGMA cipher_memory_security = ON` overflows the stack when
+# several pooled connections open at once and VirtualLock fails (ERROR_WORKING_SET_QUOTA,
+# which it nearly always does on Windows). Memory security still wipes SQLCipher's
+# buffers on free; only the (rarely effective) locking against swap is dropped.
+LIBSQLITE3_FLAGS = "-DOMIT_MEMLOCK"

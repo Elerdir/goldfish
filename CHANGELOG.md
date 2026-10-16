@@ -14,6 +14,9 @@ vydáním zapiš změny pod `[Unreleased]`.
 ### Opraveno
 - Položka „Všechny záznamy“ v levém panelu se už neroztahuje přes celou výšku okna.
 
+### Změněno
+- Novější šifrovaná databáze (SQLCipher 4.14). Stávající trezory se otevřou beze změny.
+
 ## [1.1.0] - 2026-10-16
 
 ### Přidáno

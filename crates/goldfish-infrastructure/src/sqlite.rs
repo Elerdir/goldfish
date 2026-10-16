@@ -1322,3 +1322,30 @@ mod backup_tests {
             .any(|(name, _, _)| name.contains("prerestore")));
     }
 }
+
+#[cfg(test)]
+mod pool_tests {
+    use goldfish_application::VaultStore;
+
+    use super::SqliteEntryStore;
+
+    /// SQLCipher 4.14 overflowed the stack when pooled connections with
+    /// `cipher_memory_security` opened concurrently and page locking failed; the build
+    /// compiles SQLCipher with OMIT_MEMLOCK (.cargo/config.toml). Guards both the crash and
+    /// that memory security (wiping freed buffers) stays on.
+    #[tokio::test]
+    async fn concurrent_pooled_connections_keep_memory_security_on() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = SqliteEntryStore::new(dir.path().join("vault.db"));
+        store.open(&[7u8; 32]).await.unwrap();
+
+        let pool = store.pool.read().clone().unwrap();
+        let conns: Vec<_> = (0..pool.max_size()).map(|_| pool.get().unwrap()).collect();
+        for conn in &conns {
+            let on: String = conn
+                .query_row("PRAGMA cipher_memory_security", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(on, "1");
+        }
+    }
+}
