@@ -112,11 +112,11 @@ covered by repository signing if you publish to an APT repo.
 
 ## CI release workflow
 
-[`.github/workflows/release.yml`](../.github/workflows/release.yml) builds all
-platforms in parallel via `tauri-apps/tauri-action` and uploads the installers to
-a **draft** GitHub Release. Trigger it by pushing a `v*` tag (or run it manually
-from the Actions tab). Add the signing secrets above to the repository to produce
-signed artifacts; without them the workflow still builds unsigned installers.
+The repository moved to the self-hosted Forgejo (`elerdir/goldfish`); GitHub is
+only a mirror and its Actions are not used. The GitHub release workflow
+(`tauri-action` → draft GitHub Release) was removed. Releases will go through
+Dispatch → Forgejo Actions (Windows runner on the NUC) → UpdateHub, together
+with the in-app updater.
 
 ## Reproducibility & integrity
 

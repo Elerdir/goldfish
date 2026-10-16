@@ -1,0 +1,91 @@
+name: CI
+
+# Forgejo Actions on the self-hosted runner (NUC, Linux). The Windows/macOS build
+# matrix from GitHub is gone: the Windows runner (VM on the NUC) builds installers
+# only for releases, and macOS has no runner yet.
+
+on:
+  # Push only to main: pull requests are tested via pull_request, otherwise every
+  # commit in a PR would run twice and hog the shared Linux runner.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  rust:
+    name: Rust (fmt + clippy + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The runner image runs as root without sudo. NASM + Perl: vendored OpenSSL
+      # (SQLCipher) is compiled from source.
+      - name: Install system deps
+        run: |
+          $(command -v sudo || true) apt-get update
+          $(command -v sudo || true) apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf nasm perl
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace --all-targets
+
+  deny:
+    name: Supply chain (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # cargo-deny's advisory database is the same RustSec DB as cargo-audit;
+      # one tool, precisely configured via deny.toml (accepted advisories pinned
+      # there). Licenses are reviewed out of band to avoid blocking on the large
+      # transitive tree. Prebuilt binary instead of the Docker-based action.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: cargo deny
+        run: cargo deny check advisories bans sources
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: corepack enable
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+      - run: pnpm build

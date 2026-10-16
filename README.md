@@ -63,8 +63,9 @@ cargo tauri dev
 ```
 
 Other platforms and code signing (Windows Authenticode, macOS notarization) are
-documented in [docs/packaging.md](docs/packaging.md). Tagged releases build all
-platforms in CI via [`.github/workflows/release.yml`](.github/workflows/release.yml).
+documented in [docs/packaging.md](docs/packaging.md). The main repository is the
+self-hosted Forgejo (`elerdir/goldfish`), GitHub is a read-only mirror; CI runs on
+Forgejo Actions (`.forgejo/workflows/`).
 
 ## License
 
