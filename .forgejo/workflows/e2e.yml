@@ -4,7 +4,8 @@ name: E2E smoke (manual)
 # (tauri-driver + WebKitWebDriver) under xvfb. Triggered manually so it never
 # blocks the PR gate — promote to a schedule once it's been validated locally
 # (see e2e/README.md). macOS is unsupported by tauri-driver; Windows needs a
-# self-hosted runner with a desktop session, so this runs on Linux headless.
+# self-hosted runner with a desktop session, so this runs on Linux headless
+# (Forgejo runner on the NUC; its image runs as root without sudo).
 on:
   workflow_dispatch:
   # Nightly smoke — PREPARED BUT DORMANT. Validate the harness on a runner first
@@ -18,14 +19,14 @@ env:
 jobs:
   e2e:
     name: E2E (Linux, headless)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Install system deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          $(command -v sudo || true) apt-get update
+          $(command -v sudo || true) apt-get install -y \
             libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
             nasm webkit2gtk-driver xvfb
 

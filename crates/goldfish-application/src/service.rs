@@ -1781,7 +1781,7 @@ mod tests {
 
         // Deleting a folder keeps its entries (now unfiled).
         svc.delete_folder(folder.id).await.unwrap();
-        assert!(svc.list_folders().await.unwrap().is_empty());
+        assert_eq!(svc.list_folders().await.unwrap(), Vec::new());
         assert_eq!(svc.list_entries(None).await.unwrap().len(), 2);
         assert!(svc.list_entries(Some(folder.id)).await.unwrap().is_empty());
     }
