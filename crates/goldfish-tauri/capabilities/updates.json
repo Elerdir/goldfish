@@ -1,0 +1,7 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "updates",
+    "description": "In-app updates from UpdateHub: the main window checks on startup, the Settings window checks, downloads/installs and restarts the app. Entry windows get nothing.",
+    "windows": ["main", "goldfish-settings"],
+    "permissions": ["updater:default", "process:allow-restart"]
+}

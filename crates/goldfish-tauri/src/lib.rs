@@ -35,6 +35,10 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
+        // Auto-update from UpdateHub (endpoint + public key in tauri.conf.json ->
+        // plugins.updater; the plugin verifies the minisign signature) and restart.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         // Minimize-to-tray: when the main window is minimized, hide it from the
         // taskbar — it stays reachable via the tray icon. Other windows minimize
         // normally.

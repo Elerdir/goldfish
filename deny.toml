@@ -28,6 +28,11 @@ ignore = [
     "RUSTSEC-2025-0081", # unic-char-property — unmaintained (transitive)
     "RUSTSEC-2025-0098", # unic-ucd-version — unmaintained (transitive)
     "RUSTSEC-2025-0100", # unic-char-range — unmaintained (transitive)
+    # Yanked, not vulnerable: the zip maintainer yanked every 4.x release on
+    # 2026-10-16 without a message (no RustSec/OSV advisory). tauri-plugin-updater
+    # 2.14 (latest) still requires zip ^4; the Windows NSIS update path does not
+    # unzip anything. Drop this once the updater moves to a supported zip.
+    { crate = "zip@4.6.1", reason = "yanked without advisory; required by tauri-plugin-updater 2.14" },
 ]
 
 [bans]

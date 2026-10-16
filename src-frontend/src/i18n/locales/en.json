@@ -250,6 +250,22 @@
         "autoscroll": "Auto-scroll",
         "search": "Filter logs…"
     },
+    "updates": {
+        "title": "Updates",
+        "current": "Installed version {{version}}",
+        "current_unknown": "Installed version unknown",
+        "checking": "Checking for updates…",
+        "up_to_date": "You have the latest version.",
+        "available": "Version {{version}} is available",
+        "downloading": "Downloading the update…",
+        "downloading_progress": "Downloading the update… {{progress}} %",
+        "ready": "The update is installed. Restart Goldfish to finish.",
+        "error": "Update failed: {{message}}",
+        "install": "Download and install",
+        "restart": "Restart now",
+        "check": "Check for updates",
+        "badge": "Settings – an update is available"
+    },
     "appearance": {
         "button": "Appearance",
         "title": "Appearance",

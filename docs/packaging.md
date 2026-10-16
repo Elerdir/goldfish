@@ -53,12 +53,16 @@ inside `src-frontend/` and bundles the emitted `dist/`.
 
 ## Versioning
 
-Bump the version in **both** places so they stay in sync (they should always match):
+The version lives in three places that must match (release builds verify tag == version):
 
 - `Cargo.toml` → `[workspace.package] version`
 - `crates/goldfish-tauri/tauri.conf.json` → `version`
+- `src-frontend/package.json` → `version`
 
-Then tag: `git tag v0.1.0 && git push --tags` to trigger the release workflow.
+Never bump them by hand: Dispatch runs `scripts/bump-version.mjs` in a commit reachable
+only from the release tag (main is protected), `scripts/verify-version.sh` checks the tag.
+Write user-facing changes under `## [Unreleased]` in `CHANGELOG.md` before releasing —
+`scripts/release-notes.sh` turns that section into the release notes in UpdateHub.
 
 ## Code signing
 
@@ -112,11 +116,30 @@ covered by repository signing if you publish to an APT repo.
 
 ## CI release workflow
 
-The repository moved to the self-hosted Forgejo (`elerdir/goldfish`); GitHub is
-only a mirror and its Actions are not used. The GitHub release workflow
-(`tauri-action` → draft GitHub Release) was removed. Releases will go through
-Dispatch → Forgejo Actions (Windows runner on the NUC) → UpdateHub, together
-with the in-app updater.
+The repository lives on the self-hosted Forgejo (`elerdir/goldfish`); GitHub is only a
+mirror and its Actions are not used.
+
+1. **Dispatch** (https://dispatch.niderle.cz) starts `.forgejo/workflows/dispatch.yml` with
+   version + platforms. `release-bot` pushes the tag with the version bump.
+2. The same run builds the Windows installers on the Windows runner (VM on the NUC) via the
+   composite action `.forgejo/actions/windows-installer`: `cargo tauri build --bundles msi,nsis`
+   with the updater signature, then uploads MSI and NSIS to **UpdateHub** as a draft.
+3. **Publish** the draft in UpdateHub (`/apps/goldfish`) — only then the in-app updater and
+   www.niderle.cz offer the version.
+
+`release.yml` covers a manually pushed tag and retries (`workflow_dispatch` with a tag).
+macOS and Linux builds return once their runners exist.
+
+### Updater signing key
+
+The in-app updater (Settings → Updates) accepts only builds signed with the minisign key
+whose public half is in `tauri.conf.json` → `plugins.updater.pubkey`.
+`scripts/new-signing-key.ps1` creates `%USERPROFILE%\.tauri\goldfish.key` (+ `.pub`) and a
+DPAPI-protected password; its `-CopyKey` / `-CopyPassword` switches put them on the
+clipboard for the Forgejo secrets `TAURI_SIGNING_PRIVATE_KEY` /
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. **Losing or replacing the key means installed copies
+reject every future update.** Local builds without the key use
+`crates/goldfish-tauri/tauri.nosign.conf.json` (no updater artifacts).
 
 ## Reproducibility & integrity
 

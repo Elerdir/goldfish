@@ -250,6 +250,22 @@
         "autoscroll": "Auto-Scrollen",
         "search": "Protokolle filtern…"
     },
+    "updates": {
+        "title": "Updates",
+        "current": "Installierte Version {{version}}",
+        "current_unknown": "Installierte Version unbekannt",
+        "checking": "Suche nach Updates…",
+        "up_to_date": "Sie haben die neueste Version.",
+        "available": "Version {{version}} ist verfügbar",
+        "downloading": "Update wird heruntergeladen…",
+        "downloading_progress": "Update wird heruntergeladen… {{progress}} %",
+        "ready": "Das Update ist installiert. Starten Sie Goldfish neu, um es abzuschließen.",
+        "error": "Update fehlgeschlagen: {{message}}",
+        "install": "Herunterladen und installieren",
+        "restart": "Jetzt neu starten",
+        "check": "Nach Updates suchen",
+        "badge": "Einstellungen – ein Update ist verfügbar"
+    },
     "appearance": {
         "button": "Darstellung",
         "title": "Darstellung",

@@ -31,7 +31,21 @@ echo            (first build pulls + compiles vendored OpenSSL + SQLCipher and
 echo             downloads the WiX/NSIS toolchains - 10-30 min on a cold cache)
 echo.
 
-cargo tauri build --bundles msi,nsis
+:: Updater signing: the bundle creates signed update artifacts (createUpdaterArtifacts).
+:: The key is %USERPROFILE%\.tauri\goldfish.key (scripts\new-signing-key.ps1); its
+:: DPAPI-protected password can only be decrypted by this user. Without the key the
+:: updater artifacts are switched off locally (official releases are built by CI).
+set "CONFIG_ARGS="
+if not defined TAURI_SIGNING_PRIVATE_KEY if exist "%USERPROFILE%\.tauri\goldfish.key" (
+    set "TAURI_SIGNING_PRIVATE_KEY_PATH=%USERPROFILE%\.tauri\goldfish.key"
+    for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Import-Clixml '%USERPROFILE%\.tauri\goldfish-password.clixml')))"`) do set "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=%%P"
+)
+if not defined TAURI_SIGNING_PRIVATE_KEY if not defined TAURI_SIGNING_PRIVATE_KEY_PATH (
+    echo [Goldfish] no updater signing key - building without updater artifacts.
+    set "CONFIG_ARGS=--config crates\goldfish-tauri\tauri.nosign.conf.json"
+)
+
+cargo tauri build --bundles msi,nsis %CONFIG_ARGS%
 set "EXITCODE=%ERRORLEVEL%"
 
 echo.

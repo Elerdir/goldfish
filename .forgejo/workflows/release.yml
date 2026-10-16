@@ -1,0 +1,57 @@
+name: Release
+
+# Release from an existing tag: manual push of tag vX.Y.Z or a retry (workflow_dispatch with
+# input tag, e.g. when the upload to UpdateHub failed). Regular releases go through Dispatch ->
+# dispatch.yml; tags from release-bot are skipped here (dispatch.yml builds those).
+# macOS/Linux return with their runners (stage F5).
+#
+# Secrets: TAURI_SIGNING_PRIVATE_KEY(+_PASSWORD), UPDATEHUB_CI_TOKEN (repo),
+# UPDATEHUB_URL (organization elerdir).
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to (re)release, e.g. v1.1.0"
+        required: true
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Windows installers
+    if: github.actor != 'release-bot'
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Tag == version in Cargo.toml, tauri.conf.json, package.json
+        id: version
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          bash scripts/verify-version.sh "$TAG"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      # Composite action from the current ref, not from the tag: retrying an old release gets CI fixes.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: _ci
+          sparse-checkout: .forgejo/actions
+
+      - uses: ./_ci/.forgejo/actions/windows-installer
+        with:
+          version: ${{ steps.version.outputs.version }}
+          signing-key: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          signing-key-password: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          updatehub-url: ${{ secrets.UPDATEHUB_URL }}
+          updatehub-token: ${{ secrets.UPDATEHUB_CI_TOKEN }}

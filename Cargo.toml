@@ -11,7 +11,7 @@ members = [
 [workspace.package]
 version = "1.0.0"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.90"
 license = "MIT OR Apache-2.0"
 authors = ["niderle <niderle.l@seznam.cz>"]
 repository = "https://github.com/Elerdir/goldfish"
@@ -48,7 +48,7 @@ uuid = { version = "1.10", features = ["v7", "v4", "serde"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "1"
+thiserror = "2"
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
@@ -67,6 +67,10 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-os = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-opener = "2"
+# Auto-update z UpdateHubu (endpoint + pubkey v tauri.conf.json -> plugins.updater)
+# a restart po instalaci.
+tauri-plugin-updater = "2.14"
+tauri-plugin-process = "2.4"
 
 # --- features ---
 zxcvbn = "3"

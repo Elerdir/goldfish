@@ -249,6 +249,22 @@
         "autoscroll": "Auto-posun",
         "search": "Filtrovat logy…"
     },
+    "updates": {
+        "title": "Aktualizace",
+        "current": "Nainstalovaná verze {{version}}",
+        "current_unknown": "Nainstalovaná verze není známá",
+        "checking": "Hledám aktualizace…",
+        "up_to_date": "Máte nejnovější verzi.",
+        "available": "Je k dispozici verze {{version}}",
+        "downloading": "Stahuji aktualizaci…",
+        "downloading_progress": "Stahuji aktualizaci… {{progress}} %",
+        "ready": "Aktualizace je nainstalovaná. Dokončíte ji restartem Goldfishe.",
+        "error": "Aktualizace selhala: {{message}}",
+        "install": "Stáhnout a nainstalovat",
+        "restart": "Restartovat",
+        "check": "Zkontrolovat aktualizace",
+        "badge": "Nastavení – je dostupná aktualizace"
+    },
     "appearance": {
         "button": "Vzhled",
         "title": "Vzhled",
