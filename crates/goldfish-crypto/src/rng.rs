@@ -1,21 +1,21 @@
 //! OS-CSPRNG wrappers. Centralized so we can audit every entropy source.
 //!
-//! All randomness in Goldfish flows through this module. It wraps the operating
-//! system's cryptographically secure generator (`getrandom` via `rand::OsRng`),
-//! which draws from the kernel CSPRNG (BCryptGenRandom / getrandom(2) / arc4random).
-
-use rand::rngs::OsRng;
-use rand::RngCore;
+//! All randomness in Goldfish flows through this module. It calls the operating
+//! system's cryptographically secure generator directly (`getrandom`), which draws
+//! from the kernel CSPRNG (BCryptGenRandom / getrandom(2) / arc4random).
 
 /// Fills `dst` with cryptographically secure random bytes.
+///
+/// # Panics
+/// If the OS generator is unavailable — there is no safe fallback for key material.
 pub fn fill(dst: &mut [u8]) {
-    OsRng.fill_bytes(dst);
+    getrandom::fill(dst).expect("OS CSPRNG unavailable");
 }
 
 /// Returns a fresh array of `N` cryptographically secure random bytes.
 pub fn generate<const N: usize>() -> [u8; N] {
     let mut buf = [0u8; N];
-    OsRng.fill_bytes(&mut buf);
+    fill(&mut buf);
     buf
 }
 

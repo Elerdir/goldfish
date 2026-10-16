@@ -44,7 +44,7 @@ pub fn seal(
 ) -> Result<Vec<u8>, CryptoError> {
     cipher_for(key)
         .encrypt(
-            XNonce::from_slice(nonce),
+            &XNonce::from(*nonce),
             Payload {
                 msg: plaintext,
                 aad,
@@ -74,7 +74,7 @@ pub fn open(
 ) -> Result<Vec<u8>, CryptoError> {
     cipher_for(key)
         .decrypt(
-            XNonce::from_slice(nonce),
+            &XNonce::from(*nonce),
             Payload {
                 msg: ciphertext,
                 aad,
