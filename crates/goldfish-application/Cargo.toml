@@ -20,6 +20,9 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 must_use_candidate = "allow"
 significant_drop_tightening = "allow"
+# #[async_trait] marks every generated method #[must_use] although the returned
+# Pin<Box<dyn Future>> already is; clippy 1.99 flags each port method. Fix belongs upstream.
+double_must_use = "allow"
 
 [dependencies]
 goldfish-domain.workspace = true
