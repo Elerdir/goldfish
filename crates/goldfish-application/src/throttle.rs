@@ -54,7 +54,7 @@ impl UnlockThrottle {
     }
 
     /// Clears all backoff state after a successful unlock.
-    pub fn record_success(&mut self) {
+    pub const fn record_success(&mut self) {
         self.consecutive_failures = 0;
         self.locked_until = None;
     }

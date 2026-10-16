@@ -17,3 +17,4 @@
 *.woff  binary
 *.woff2 binary
 *.goldfish binary
+*.db binary

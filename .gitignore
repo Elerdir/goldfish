@@ -36,6 +36,8 @@ desktop.ini
 goldfish-data/
 *.goldfish-vault
 *.db
+# Compatibility fixtures are real (test-only) vaults and must be committed.
+!crates/goldfish-infrastructure/tests/fixtures/**/*.db
 *.db-journal
 *.db-wal
 *.db-shm
