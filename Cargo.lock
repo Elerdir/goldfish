@@ -1858,7 +1858,7 @@ dependencies = [
 
 [[package]]
 name = "goldfish-application"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1883,7 +1883,7 @@ dependencies = [
 
 [[package]]
 name = "goldfish-crypto"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "argon2",
  "chacha20poly1305",
@@ -1900,7 +1900,7 @@ dependencies = [
 
 [[package]]
 name = "goldfish-domain"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "chrono",
  "secrecy",
@@ -1912,7 +1912,7 @@ dependencies = [
 
 [[package]]
 name = "goldfish-infrastructure"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1946,7 +1946,7 @@ dependencies = [
 
 [[package]]
 name = "goldfish-tauri"
-version = "1.0.0"
+version = "1.1.1"
 dependencies = [
  "anyhow",
  "clipboard-win",
