@@ -9,7 +9,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
     plugins: [TanStackRouterVite({ target: "react", autoCodeSplitting: true }), react()],
     resolve: {
-        alias: { "@": path.resolve(__dirname, "./src") },
+        alias: { "@": path.resolve(import.meta.dirname, "./src") },
     },
     test: {
         environment: "jsdom",
@@ -28,7 +28,6 @@ export default defineConfig(() => ({
     envPrefix: ["VITE_", "TAURI_ENV_*"],
     build: {
         target: ["es2022", "chrome120", "safari17"],
-        minify: "esbuild" as const,
         sourcemap: false,
     },
 }));
