@@ -5,7 +5,7 @@
 //! compare in constant time. A match proves the password is correct without
 //! decrypting any entry; a mismatch reveals nothing about *why* it failed.
 
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
 
@@ -22,7 +22,7 @@ type HmacSha256 = Hmac<Sha256>;
 /// Computes HMAC-SHA256 over `data` with `key`. The key may be any length.
 pub fn hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32] {
     let mut mac =
-        <HmacSha256 as Mac>::new_from_slice(key).expect("HMAC accepts a key of any length");
+        <HmacSha256 as KeyInit>::new_from_slice(key).expect("HMAC accepts a key of any length");
     mac.update(data);
     let tag = mac.finalize().into_bytes();
     let mut out = [0u8; 32];
