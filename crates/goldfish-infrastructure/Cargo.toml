@@ -84,3 +84,8 @@ block2 = "0.6"
 [dev-dependencies]
 tempfile = "3"
 tokio = { workspace = true }
+
+# keyring 3 (the version Goldfish ≤ 1.1.0 shipped) — only to prove that keys it stored in
+# Windows Credential Manager are still found by the current keyring (keystore.rs tests).
+[target.'cfg(windows)'.dev-dependencies]
+keyring3 = { package = "keyring", version = "3", features = ["windows-native"] }
