@@ -89,12 +89,16 @@ export function FolderSidebar({
 
     return (
         <aside className="flex w-52 shrink-0 flex-col gap-0.5 overflow-y-auto rounded-xl border border-border bg-card/60 p-3 shadow-sm">
-            <FolderItem
-                label={t("folder.all")}
-                active={selected === null}
-                onClick={() => onSelect(null)}
-                onMoveHere={(id) => void moveHere(id, null)}
-            />
+            {/* Same row wrapper as the folders: FolderItem is flex-1 to fill a row, and directly in
+                the column it would stretch to the sidebar's full height. */}
+            <div className="flex items-center">
+                <FolderItem
+                    label={t("folder.all")}
+                    active={selected === null}
+                    onClick={() => onSelect(null)}
+                    onMoveHere={(id) => void moveHere(id, null)}
+                />
+            </div>
             {folders.map((f) =>
                 editingId === f.id ? (
                     <input

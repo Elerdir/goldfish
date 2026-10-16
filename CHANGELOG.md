@@ -11,6 +11,11 @@ vydáním zapiš změny pod `[Unreleased]`.
 
 ## [Unreleased]
 
+### Opraveno
+- Položka „Všechny záznamy“ v levém panelu se už neroztahuje přes celou výšku okna.
+
+## [1.1.0] - 2026-10-16
+
 ### Přidáno
 - Automatické aktualizace: Goldfish po spuštění sám zjistí novou verzi a nabídne ji
   v Nastavení → Aktualizace (stažení, instalace a restart jedním klikem). Aktualizace
